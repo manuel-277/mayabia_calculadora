@@ -1,0 +1,447 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
+  <title>GELE-OS</title>
+  <link rel="manifest" href="#manifest-placeholder">
+  <meta name="theme-color" content="#121212">
+  <link rel="icon" href="image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📱</text></svg>">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; user-select: none; -webkit-tap-highlight-color: transparent; }
+    body {
+      font-family: 'Google Sans', system-ui, sans-serif;
+      background: #000;
+      color: white;
+      height: 100vh;
+      overflow: hidden;
+      touch-action: manipulation;
+    }
+    .phone {
+      width: 100%;
+      height: 100vh;
+      max-width: 412px;
+      max-height: 915px;
+      margin: auto;
+      background: #000;
+      position: relative;
+      overflow: hidden;
+      border-radius: 40px;
+      border: 8px solid #222;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.9);
+    }
+    .status-bar {
+      height: 24px;
+      padding: 0 16px;
+      display: flex;
+      justify-content: flex-end;
+      align-items: center;
+      color: white;
+      font-size: 14px;
+      gap: 4px;
+    }
+    .search-bar {
+      width: calc(100% - 32px);
+      padding: 8px 12px;
+      background: #1e1e1e;
+      border: 1px solid #333;
+      border-radius: 20px;
+      color: white;
+      margin: 16px auto;
+      display: block;
+    }
+    .home-screen {
+      height: calc(100% - 100px);
+      padding: 0 16px;
+      overflow-y: auto;
+    }
+    .apps-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 20px;
+      margin-bottom: 20px;
+    }
+    .app-icon {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 6px;
+      cursor: pointer;
+      padding: 8px;
+      border-radius: 16px;
+      transition: background 0.2s;
+    }
+    .app-icon:active { background: rgba(255,255,255,0.15); transform: scale(0.96); }
+    .icon-bg {
+      width: 60px;
+      height: 60px;
+      border-radius: 18px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 28px;
+      background: #3399ff;
+    }
+    .dock {
+      height: 80px;
+      background: rgba(30,30,30,0.9);
+      display: flex;
+      justify-content: space-around;
+      align-items: center;
+      padding: 0 20px;
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      border-top: 1px solid rgba(255,255,255,0.05);
+    }
+    .dock .icon-bg { width: 56px; height: 56px; border-radius: 16px; }
+    .window { position: absolute; inset: 0; background: #121212; display: none; flex-direction: column; z-index: 10; border-radius: 40px; overflow: hidden; }
+    .toolbar {
+      height: 56px;
+      background: #1e1e1e;
+      display: flex;
+      align-items: center;
+      padding: 0 16px;
+      color: white;
+      font-size: 18px;
+      font-weight: 500;
+    }
+    .toolbar button { background: none; border: none; color: white; font-size: 24px; margin-left: auto; }
+    .content { flex: 1; padding: 16px; overflow-y: auto; }
+    .card { background: #1e1e1e; border-radius: 16px; padding: 16px; margin-bottom: 16px; }
+    iframe, video, audio, img { width: 100%; border-radius: 12px; background: #000; margin: 8px 0; border: none; }
+    .btn { padding: 8px 16px; border-radius: 8px; border: none; background: #3399ff; color: white; font-weight: bold; cursor: pointer; width: 100%; margin-top: 10px; }
+    .mini-player {
+      position: fixed;
+      bottom: 80px;
+      left: 0;
+      right: 0;
+      background: #1a1a1a;
+      padding: 8px 16px;
+      display: none;
+      align-items: center;
+      justify-content: space-between;
+      z-index: 100;
+      border-top: 1px solid #333;
+    }
+    .mini-player button { background: none; color: white; font-size: 18px; }
+    .mini-player span { font-size: 14px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .legal-notice { font-size: 12px; color: #94a3b8; margin-top: 8px; font-style: italic; }
+    .profile-header { text-align: center; padding: 16px 0; }
+    .profile-pic { width: 80px; height: 80px; border-radius: 50%; background: #3399ff; display: flex; align-items: center; justify-content: center; font-size: 40px; margin: 0 auto 10px; }
+  </style>
+</head>
+<body>
+
+<div class="phone">
+  <div class="status-bar">
+    <span>📶</span>
+    <span>🔋 92%</span>
+    <span id="time">09:41</span>
+  </div>
+
+  <div class="home-screen">
+    <input type="text" class="search-bar" id="appSearch" placeholder="Pesquisar apps..." oninput="filterApps(this.value)">
+    <div class="apps-grid" id="appsGrid"></div>
+  </div>
+
+  <div class="dock">
+    <div class="app-icon" onclick="openApp('whatsapp')">
+      <div class="icon-bg" style="background:#25D366"><i class="bi bi-whatsapp"></i></div>
+      <div>WhatsApp</div>
+    </div>
+    <div class="app-icon" onclick="openApp('music')">
+      <div class="icon-bg" style="background:#3b82f6"><i class="bi bi-music-note-beamed"></i></div>
+      <div>Música</div>
+    </div>
+    <div class="app-icon" onclick="openApp('videos')">
+      <div class="icon-bg" style="background:#ff0000"><i class="bi bi-film"></i></div>
+      <div>Vídeos</div>
+    </div>
+    <div class="app-icon" onclick="openApp('aboutme')">
+      <div class="icon-bg" style="background:#ec4899"><i class="bi bi-person"></i></div>
+      <div>Sobre Mim</div>
+    </div>
+  </div>
+
+  <div class="mini-player" id="miniPlayer">
+    <button onclick="prevTrack()"><i class="bi bi-skip-backward"></i></button>
+    <button onclick="togglePlayPause()"><i class="bi bi-pause-fill" id="playPauseIcon"></i></button>
+    <button onclick="nextTrack()"><i class="bi bi-skip-forward"></i></button>
+    <span id="currentTrackTitle">Nenhuma música</span>
+  </div>
+
+  <div class="window" id="appWindow">
+    <div class="toolbar">
+      <span id="appTitle">App</span>
+      <button onclick="closeApp()">✕</button>
+    </div>
+    <div class="content" id="appContent"></div>
+  </div>
+</div>
+
+<script>
+// === PWA ===
+const manifest = {
+  "name": "GELE-OS",
+  "short_name": "GELE-OS",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#000",
+  "theme_color": "#121212",
+  "icons": [{ "src": "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📱</text></svg>", "sizes": "192x192", "type": "image/svg+xml" }]
+};
+const manifestURL = URL.createObjectURL(new Blob([JSON.stringify(manifest)], {type: 'application/json'}));
+document.querySelector('link[rel="manifest"]').href = manifestURL;
+
+// === Apps (25+) ===
+const allApps = [
+  { id: 'whatsapp', name: 'WhatsApp', icon: 'bi-whatsapp', color: '#25D366' },
+  { id: 'facebook', name: 'Facebook', icon: 'bi-facebook', color: '#1877f2' },
+  { id: 'tiktok', name: 'TikTok', icon: 'bi-tiktok', color: '#000000' },
+  { id: 'youtube', name: 'YouTube', icon: 'bi-youtube', color: '#ff0000' },
+  { id: 'office', name: 'Office', icon: 'bi-microsoft', color: '#f25022' },
+  { id: 'gmail', name: 'Email', icon: 'bi-envelope', color: '#ea4335' },
+  { id: 'chrome', name: 'Navegador', icon: 'bi-browser-chrome', color: '#4285f4' },
+  { id: 'maps', name: 'Mapas', icon: 'bi-geo-alt', color: '#4285f4' },
+  { id: 'music', name: 'Música', icon: 'bi-music-note-beamed', color: '#3b82f6' },
+  { id: 'videos', name: 'Vídeos', icon: 'bi-film', color: '#ff0000' },
+  { id: 'podcasts', name: 'Podcasts', icon: 'bi-mic', color: '#f97316' },
+  { id: 'bible', name: 'Bíblia', icon: 'bi-book', color: '#f59e0b' },
+  { id: 'weather', name: 'Clima', icon: 'bi-cloud-sun', color: '#fbbf24' },
+  { id: 'health', name: 'Saúde', icon: 'bi-heart-pulse', color: '#ec4899' },
+  { id: 'saldo', name: 'Saldo (Kz)', icon: 'bi-currency-dollar', color: '#10b981' },
+  { id: 'calculator', name: 'Calculadora', icon: 'bi-calculator', color: '#f59e0b' },
+  { id: 'clock', name: 'Relógio', icon: 'bi-clock', color: '#8b5cf6' },
+  { id: 'notes', name: 'Notas', icon: 'bi-journal-text', color: '#10b981' },
+  { id: 'recorder', name: 'Gravador', icon: 'bi-mic-fill', color: '#f97316' },
+  { id: 'settings', name: 'Configurações', icon: 'bi-gear', color: '#374151' },
+  { id: 'minhas-ideias', name: 'Minhas Ideias', icon: 'bi-lightbulb', color: '#f97316' },
+  { id: 'aboutme', name: 'Sobre Mim', icon: 'bi-person', color: '#ec4899' },
+  { id: 'camera', name: 'Câmera', icon: 'bi-camera', color: '#ef4444' },
+  { id: 'gallery', name: 'Galeria', icon: 'bi-images', color: '#64748b' },
+  { id: 'games', name: 'Jogos', icon: 'bi-controller', color: '#ef4444' }
+];
+
+let currentAppList = [...allApps];
+
+function renderApps() {
+  const grid = document.getElementById('appsGrid');
+  grid.innerHTML = '';
+  currentAppList.forEach(app => {
+    const div = document.createElement('div');
+    div.className = 'app-icon';
+    div.onclick = () => openApp(app.id);
+    div.innerHTML = `<div class="icon-bg" style="background:${app.color}"><i class="bi ${app.icon}"></i></div><div>${app.name}</div>`;
+    grid.appendChild(div);
+  });
+}
+renderApps();
+
+function filterApps(query) {
+  const q = query.toLowerCase();
+  currentAppList = allApps.filter(app => app.name.toLowerCase().includes(q));
+  renderApps();
+}
+
+// === Hora ===
+function updateTime() {
+  const now = new Date();
+  document.getElementById('time').textContent = now.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+}
+setInterval(updateTime, 1000);
+updateTime();
+
+// === Gestos ===
+let touchStartX = 0;
+document.addEventListener('touchstart', e => touchStartX = e.changedTouches[0].screenX);
+document.addEventListener('touchend', e => {
+  const touchEndX = e.changedTouches[0].screenX;
+  if (touchEndX - touchStartX > 50) closeApp();
+});
+
+// === REPRODUTORES ===
+const musicLibrary = [
+  { title: "SoundHelix Song 1", artist: "Creative Commons", url: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3" },
+  { title: "LoFi Beat", artist: "Free Music Archive", url: "https://file-examples.com/storage/fe0c7e7a0a0f0b0a0b0a0b0/2017/11/file_example_MP3_700KB.mp3" }
+];
+let currentTrackIndex = -1;
+let audioElement = null;
+
+function openMusicPlayer() {
+  let html = `<div class="card"><h5>🎵 Músicas Reais</h5><p class="legal-notice">⚠️ Creative Commons – uso pessoal permitido.</p></div>`;
+  musicLibrary.forEach((track, i) => {
+    html += `<div class="music-track" style="background:#1e1e1e;padding:12px;border-radius:12px;margin-bottom:10px;display:flex;justify-content:space-between;align-items:center;">
+      <div><strong>${track.title}</strong><br><small>${track.artist}</small></div>
+      <a href="${track.url}" download="${track.title}.mp3" class="btn" style="background:#10b981;width:auto;padding:4px 8px;font-size:12px;">⬇</a>
+    </div>`;
+  });
+  document.getElementById('appContent').innerHTML = html;
+}
+
+function openVideoPlayer() {
+  document.getElementById('appContent').innerHTML = `
+    <div class="card">
+      <h5>🎥 Vídeos de Exemplo</h5>
+      <button class="btn" style="background:#ff0000;" onclick="playVideo('https://file-examples.com/storage/fe6a4a4b7b7c7d7e7f7g7h7/2017/04/file_example_MP4_480_1_5MG.mp4')">Vídeo 1 (MP4)</button>
+      <div id="videoContainer" style="margin-top:15px;"></div>
+    </div>
+  `;
+}
+function playVideo(url) {
+  document.getElementById('videoContainer').innerHTML = `<video src="${url}" controls style="width:100%; background:#000; border-radius:12px;"></video>`;
+}
+
+// === MINHAS IDEIAS (Livro Pessoal) ===
+function openMinhasIdeias() {
+  document.getElementById('appContent').innerHTML = `
+    <div class="card">
+      <h5>📖 Minhas Ideias – Por Manuel Luciano</h5>
+      <p>Este é o meu espaço para reflexões, dicas e sonhos.</p>
+      <ul style="padding-left:20px;margin:15px 0;">
+        <li>• A tecnologia deve servir o povo angolano.</li>
+        <li>• Criar sistemas livres e acessíveis.</li>
+        <li>• Valorizar a cultura, línguas e identidade nacional.</li>
+        <li>• Nunca parar de aprender.</li>
+      </ul>
+      <p><strong>© Manuel Luciano – Luanda, Angola</strong></p>
+    </div>
+  `;
+}
+
+// === SOBRE MIM ===
+function openAboutMe() {
+  document.getElementById('appContent').innerHTML = `
+    <div class="profile-header">
+      <div class="profile-pic">M</div>
+      <h4>Manuel Luciano</h4>
+      <p class="text-muted">Desenvolvedor • Angola</p>
+    </div>
+    <div class="card">
+      <p>🚀 Criador do GELE-OS</p>
+      <p>💡 Apaixonado por tecnologia, cultura e educação.</p>
+      <p>🌍 Sonho: um Angola digital, soberano e criativo.</p>
+      <p>📚 “Minhas Ideias” é o meu livro digital.</p>
+    </div>
+  `;
+}
+
+// === OUTROS APPS ===
+function openNotes() {
+  const saved = localStorage.getItem('gele-note') || '';
+  document.getElementById('appContent').innerHTML = `<textarea id="noteEditor" class="form-control" rows="8" style="background:#1e1e1e;color:white;border:1px solid #333;width:100%;padding:10px;">${saved}</textarea><button class="btn" onclick="saveNote()">💾 Salvar</button>`;
+}
+function saveNote() {
+  localStorage.setItem('gele-note', document.getElementById('noteEditor').value);
+  alert("Nota salva!");
+}
+
+function openCalculator() {
+  document.getElementById('appContent').innerHTML = `
+    <div id="calcDisplay" style="background:#1e1e1e;padding:15px;text-align:right;font-size:24px;height:60px;border-radius:12px;">0</div>
+    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:10px;">
+      ${['C','←','/','*','7','8','9','-','4','5','6','+','1','2','3','0','.','='].map(btn => 
+        `<button class="btn" style="background:${btn==='='?'#3399ff':'#374151'};font-size:16px;padding:10px;" onclick="calc('${btn}')">${btn}</button>`
+      ).join('')}
+    </div>
+  `;
+}
+function calc(key) {
+  const d = document.getElementById('calcDisplay');
+  let v = d.innerText;
+  if (key === 'C') d.innerText = '0';
+  else if (key === '←') d.innerText = v.length > 1 ? v.slice(0,-1) : '0';
+  else if (key === '=') {
+    try { d.innerText = eval(v); } catch { d.innerText = 'Erro'; }
+  } else {
+    d.innerText = v === '0' || v === 'Erro' ? (key === '.' ? '0.' : key) : v + key;
+  }
+}
+
+// === APPS EXTERNOS ===
+const externalApps = {
+  whatsapp: 'https://web.whatsapp.com',
+  facebook: 'https://m.facebook.com',
+  tiktok: 'https://www.tiktok.com',
+  youtube: 'https://www.youtube.com',
+  office: 'https://www.office.com',
+  gmail: 'https://mail.google.com',
+  maps: 'https://www.google.com/maps',
+  chrome: 'https://www.google.com'
+};
+
+function openApp(id) {
+  document.getElementById('appTitle').textContent = allApps.find(a => a.id === id)?.name || id;
+  
+  if (externalApps[id]) {
+    window.open(externalApps[id], '_self');
+    return;
+  }
+
+  document.getElementById('appWindow').style.display = 'flex';
+
+  if (id === 'music') openMusicPlayer();
+  else if (id === 'videos') openVideoPlayer();
+  else if (id === 'minhas-ideias') openMinhasIdeias();
+  else if (id === 'aboutme') openAboutMe();
+  else if (id === 'notes') openNotes();
+  else if (id === 'calculator') openCalculator();
+  else if (id === 'clock') {
+    const now = new Date();
+    document.getElementById('appContent').innerHTML = `<div class="card"><h5>⏰ Relógio Mundial</h5><p>Luanda: ${now.toLocaleTimeString('pt-AO')}</p></div>`;
+  }
+  else if (id === 'podcasts') {
+    document.getElementById('appContent').innerHTML = `<div class="card"><h5>🎙️ Podcasts</h5><p>Episódio: "Tecnologia em Angola"</p><audio src="https://file-examples.com/storage/fe0c7e7a0a0f0b0a0b0a0b0/2017/11/file_example_MP3_700KB.mp3" controls style="width:100%;"></audio></div>`;
+  }
+  else if (id === 'bible') {
+    document.getElementById('appContent').innerHTML = `<div class="card"><h5>✝️ João 3:16</h5><p>"Porque Deus amou o mundo de tal maneira que deu o seu Filho unigênito..."</p></div>`;
+  }
+  else if (id === 'weather') {
+    document.getElementById('appContent').innerHTML = `<div class="card"><h5>🌤️ Clima</h5><p>Luanda: 32°C • Ensolarado</p></div>`;
+  }
+  else if (id === 'health') {
+    document.getElementById('appContent').innerHTML = `<div class="card"><h5>❤️ Saúde</h5><p>Passos hoje: 4.210</p><p>➡️ Beba água!</p></div>`;
+  }
+  else if (id === 'saldo') {
+    document.getElementById('appContent').innerHTML = `<div class="card text-center"><h5>💰 Saldo (Kz)</h5><h2 style="color:#4ade80">Kz 500,00</h2><p>Válido até 31/12/2025</p></div>`;
+  }
+  else if (id === 'settings') {
+    document.getElementById('appContent').innerHTML = `<div class="card"><h5>⚙️ GELE-OS v11.0</h5><p>Desenvolvido por Manuel Luciano</p><p>📍 Angola • 🇦🇴</p></div>`;
+  }
+  else {
+    document.getElementById('appContent').innerHTML = `<div class="card">App "${id}" aberto.</div>`;
+  }
+}
+
+function closeApp() {
+  document.getElementById('appWindow').style.display = 'none';
+}
+
+// === CONTROLES DE MÚSICA ===
+function playTrack(index) {
+  currentTrackIndex = index;
+  const track = musicLibrary[index];
+  if (audioElement) audioElement.pause();
+  audioElement = new Audio(track.url);
+  audioElement.play();
+  document.getElementById('miniPlayer').style.display = 'flex';
+  document.getElementById('currentTrackTitle').textContent = `${track.title} • ${track.artist}`;
+  document.getElementById('playPauseIcon').className = 'bi bi-pause-fill';
+  audioElement.onended = () => {
+    if (currentTrackIndex < musicLibrary.length - 1) nextTrack();
+    else document.getElementById('miniPlayer').style.display = 'none';
+  };
+}
+function togglePlayPause() {
+  if (!audioElement) return;
+  if (audioElement.paused) { audioElement.play(); document.getElementById('playPauseIcon').className = 'bi bi-pause-fill'; }
+  else { audioElement.pause(); document.getElementById('playPauseIcon').className = 'bi bi-play-fill'; }
+}
+function nextTrack() { if (currentTrackIndex < musicLibrary.length - 1) playTrack(currentTrackIndex + 1); }
+function prevTrack() { if (currentTrackIndex > 0) playTrack(currentTrackIndex - 1); }
+</script>
+
+</body>
+</html>
