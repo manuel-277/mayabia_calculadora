@@ -1,0 +1,226 @@
+<!doctype html>
+<html lang="pt">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Mayabia — Calculadora Final</title>
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#6b46c1"/>
+  <style>
+    :root{--bg:#0f1724;--card:#0b1220;--accent1:#6b46c1;--accent2:#06b6d4;color-scheme:dark}
+    *{box-sizing:border-box}body{margin:0;font-family:Arial,Helvetica,sans-serif;background:linear-gradient(180deg,#071021 0%, #081226 100%);color:#e6eef8;min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px}
+    .app{width:100%;max-width:980px;background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));border-radius:16px;padding:18px;box-shadow:0 10px 30px rgba(2,6,23,0.7);border:1px solid rgba(255,255,255,0.03)}
+    .header{display:flex;gap:12px;align-items:center;justify-content:space-between}
+    .brand{display:flex;gap:12px;align-items:center}
+    .icon{width:56px;height:56px;border-radius:12px;background:linear-gradient(135deg,var(--accent1),var(--accent2));display:flex;align-items:center;justify-content:center;font-weight:700;font-size:28px}
+    h1{margin:0;font-size:20px}
+    .grid{display:grid;grid-template-columns:1fr 320px;gap:18px;margin-top:16px}
+    .card{background:rgba(255,255,255,0.02);padding:14px;border-radius:12px}
+    label{display:block;margin-top:8px;font-size:13px;color:#cfe8ff}
+    input,select{width:100%;padding:8px;border-radius:8px;border:1px solid rgba(255,255,255,0.04);background:rgba(0,0,0,0.25);color:inherit;margin-top:6px}
+    button{padding:10px 12px;border-radius:8px;border:0;background:linear-gradient(90deg,var(--accent1),var(--accent2));color:#041124;cursor:pointer;font-weight:700}
+    .small{font-size:13px;color:#9ec3ff}
+    .nav{display:flex;flex-direction:column;gap:8px}
+    .nav button{background:transparent;border:1px solid rgba(255,255,255,0.03);color:inherit;padding:10px;text-align:left}
+    .footer{margin-top:14px;font-size:12px;color:#9fbfe6;text-align:center}
+    @media(max-width:860px){.grid{grid-template-columns:1fr;}}
+  </style>
+</head>
+<body>
+  <div class="app" role="application">
+    <div class="header">
+      <div class="brand">
+        <div class="icon">ML</div>
+        <div>
+          <h1>Mayabia — Calculadora Final</h1>
+          <div class="small" id="welcome">Registe-se para começar</div>
+        </div>
+      </div>
+      <div>
+        <select id="lang">
+          <option value="pt">Português</option>
+          <option value="en">English</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="grid">
+      <div>
+        <div class="card" id="mainCard">
+          <!-- content injected by JS -->
+        </div>
+
+        <div class="card" style="margin-top:12px">
+          <h3>Sobre</h3>
+          <p class="small">Esta aplicativo foi criado por <strong>Manuel Luciano</strong>, com objetivo de insetivar, a população a dispertar em um sono profundo, do teu tempo de vida nesta terra</p>
+        </div>
+      </div>
+
+      <aside class="card">
+        <div class="nav">
+          <button data-view="calculator">Calculadora</button>
+          <button data-view="worldend">Culculadora do fim do  Mundo</button>
+          <button data-view="settings">Definições</button>
+        </div>
+      </aside>
+    </div>
+
+    <div class="footer">2025 & Mayabia — Calculadora Final.</div>
+  </div>
+
+<script>
+/* Simple SPA logic + localStorage auth (demo) */
+const t = {
+  pt: {
+    login: "Iniciar Sessão", register: "Registar", logout: "Sair", name:"Nome", email:"Email", password:"Senha",
+    calcTitle:"Calculadora de Tempo de Vida", species:"Tipo de ser", human:"Humano", animal:"Animal", years:"Anos estimados", calculate:"Calcular",
+    worldEnd:"Estimativa de Fim do Mundo", settings:"Definições", welcome:"Bem-vindo(a)"
+  },
+  en: {
+    login: "Login", register: "Register", logout:"Logout", name:"Name", email:"Email", password:"Password",
+    calcTitle:"Life-time Calculator", species:"Type of being", human:"Human", animal:"Animal", years:"Estimated years", calculate:"Calculate",
+    worldEnd:"World End Estimate", settings:"Settings", welcome:"Welcome"
+  }
+};
+let lang = localStorage.getItem('mayabia_lang') || 'pt';
+document.getElementById('lang').value = lang;
+document.getElementById('lang').addEventListener('change', (e)=>{ lang=e.target.value; localStorage.setItem('mayabia_lang', lang); render(); });
+
+const AUTH_KEY = 'mayabia_users_v1';
+const SESSION_KEY = 'mayabia_session_v1';
+
+function saveUser({name,email,password}){
+  const all = JSON.parse(localStorage.getItem(AUTH_KEY) || '[]');
+  if(all.find(u=>u.email===email)) throw 'exists';
+  all.push({name,email,password});
+  localStorage.setItem(AUTH_KEY, JSON.stringify(all));
+}
+function checkLogin(email,password){
+  const all = JSON.parse(localStorage.getItem(AUTH_KEY) || '[]');
+  return all.find(u=>u.email===email && u.password===password);
+}
+function createSession(user){ localStorage.setItem(SESSION_KEY, JSON.stringify({email:user.email,name:user.name})); }
+function getSession(){ return JSON.parse(localStorage.getItem(SESSION_KEY) || 'null'); }
+function clearSession(){ localStorage.removeItem(SESSION_KEY); }
+
+function el(html){ const d=document.createElement('div'); d.innerHTML=html; return d.firstElementChild; }
+
+function renderAuth(){
+  const s = getSession();
+  if(s){
+    document.getElementById('welcome').textContent = t[lang].welcome + ', ' + s.name;
+    return renderDashboard();
+  }
+  document.getElementById('welcome').textContent = 'Mayabia — demo';
+  const card = document.getElementById('mainCard');
+  card.innerHTML = '';
+  const form = el('<div><h2>'+t[lang].login+' / '+t[lang].register+'</h2></div>');
+  const f = document.createElement('form');
+  f.innerHTML = `
+    <label>${t[lang].name}<input id="rname" /></label>
+    <label>${t[lang].email}<input id="remail" /></label>
+    <label>${t[lang].password}<input id="rpass" type="password" /></label>
+    <div style="margin-top:8px"><button id="createBtn" type="button">${t[lang].register}</button>
+    <button id="loginBtn" type="button">${t[lang].login}</button></div>
+    <p class="small" id="msg"></p>
+  `;
+  form.appendChild(f);
+  card.appendChild(form);
+
+  card.querySelector('#createBtn').addEventListener('click', ()=>{
+    const name = card.querySelector('#rname').value.trim();
+    const email = card.querySelector('#remail').value.trim();
+    const password = card.querySelector('#rpass').value;
+    try{ if(!name||!email||!password) throw 'fill'; saveUser({name,email,password}); card.querySelector('#msg').textContent='Conta criada! Faça login.'; }catch(err){ if(err==='exists') card.querySelector('#msg').textContent='Já existe conta com esse email.'; else card.querySelector('#msg').textContent='Erro.'; }
+  });
+  card.querySelector('#loginBtn').addEventListener('click', ()=>{
+    const email = card.querySelector('#remail').value.trim();
+    const password = card.querySelector('#rpass').value;
+    const user = checkLogin(email,password);
+    if(user){ createSession(user); render(); } else { card.querySelector('#msg').textContent='Credenciais inválidas.'; }
+  });
+}
+
+function renderDashboard(){
+  const s = getSession();
+  document.getElementById('welcome').textContent = t[lang].welcome + ', ' + s.name;
+  const card = document.getElementById('mainCard');
+  card.innerHTML = `
+    <div style="display:flex;justify-content:space-between;align-items:center">
+      <h2>${t[lang].calcTitle}</h2>
+      <div><button id="logoutBtn" style="background:transparent;border:1px solid rgba(255,255,255,0.06);color:inherit;padding:8px;border-radius:8px">${t[lang].logout}</button></div>
+    </div>
+    <div id="calculatorArea" style="margin-top:12px">
+      <label>${t[lang].species}
+        <select id="spec">
+          <option value="human">${t[lang].human}</option>
+          <option value="animal">${t[lang].animal}</option>
+        </select>
+      </label>
+      <label>Idade<input id="ageInput" type="number" value="30" min="0" max="200" /></label>
+      <div style="margin-top:8px"><button id="calcBtn">${t[lang].calculate}</button></div>
+      <div id="result" style="margin-top:10px"></div>
+    </div>
+  `;
+  card.querySelector('#logoutBtn').addEventListener('click', ()=>{ clearSession(); render(); });
+  card.querySelector('#calcBtn').addEventListener('click', ()=>{
+    const species = card.querySelector('#spec').value;
+    const age = Number(card.querySelector('#ageInput').value) || 0;
+    const res = estimateLife(species, age);
+    const out = `<p>${t[lang].years}: <strong>${res.base} anos</strong></p><p>Restantes estimados: <strong>${res.remaining} anos</strong></p>`;
+    card.querySelector('#result').innerHTML = out + '<p class="small">Nota: estimativa aproximada e para entretenimento.</p>';
+  });
+}
+
+function renderWorldEnd(){
+  const card = document.getElementById('mainCard');
+  card.innerHTML = `<h2>${t[lang].worldEnd}</h2><p class="small">Estimativa lúdica gerada aleatoriamente.</p><div style="margin-top:8px"><button id="genBtn">Gerar Estimativa</button></div><div id="weRes" style="margin-top:10px"></div>`;
+  card.querySelector('#genBtn').addEventListener('click', ()=>{
+    const yearsFromNow = Math.floor(Math.random()*500)+1;
+    const year = new Date().getFullYear() + yearsFromNow;
+    card.querySelector('#weRes').innerHTML = `<p>Em aproximadamente <strong>${yearsFromNow} anos</strong>, por volta do ano <strong>${year}</strong>.</p>`;
+  });
+}
+
+function renderSettings(){
+  const card = document.getElementById('mainCard');
+  const s = getSession();
+  card.innerHTML = `<h2>${t[lang].settings}</h2><p class="small">Opções do aplicativo (demo).</p><div style="margin-top:8px"><button id="clearBtn">Remover conta local (apenas demo)</button></div>`;
+  card.querySelector('#clearBtn').addEventListener('click', ()=>{
+    if(confirm('Remover contas locais?')){ localStorage.removeItem(AUTH_KEY); localStorage.removeItem(SESSION_KEY); alert('Removido'); location.reload(); }
+  });
+}
+
+function estimateLife(species, age){
+  let base = 72;
+  if(species==='animal'){
+    base = 12 + Math.round((Math.random()*60));
+  }
+  const remaining = Math.max(0, base - age);
+  return {base, remaining};
+}
+
+// navigation buttons
+document.querySelectorAll('[data-view]').forEach(btn=>btn.addEventListener('click', (e)=>{
+  const v = e.target.getAttribute('data-view');
+  if(v==='calculator') { if(getSession()) renderDashboard(); else renderAuth(); }
+  else if(v==='worldend') renderWorldEnd();
+  else if(v==='settings') renderSettings();
+}));
+
+function render(){
+  if(getSession()) renderDashboard(); else renderAuth();
+}
+render();
+
+/* Register service worker */
+if('serviceWorker' in navigator){
+  navigator.serviceWorker.register('/service-worker.js').catch(()=>{});
+}
+
+/* Prompt install for PWA (optional) */
+let deferredPrompt;
+window.addEventListener('beforeinstallprompt', (e) => { e.preventDefault(); deferredPrompt = e; /* could show install UI */ });
+</script>
+</body>
+</html>
